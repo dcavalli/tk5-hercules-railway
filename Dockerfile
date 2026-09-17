@@ -79,5 +79,11 @@ RUN set -eux; \
         src=$(ls /usr/lib/*/libbz2.so.1* | head -1); \
         ln -s "$src" "$(dirname "$src")/libbz2.so.1.0"; \
     fi
-CMD ["/tk5/mvs"]
+# Keep a pristine copy of the packs so an empty Railway volume mounted on
+# /tk5/dasd can be seeded on first start. Without this, attaching persistence
+# hides the system the image ships and there is nothing to IPL.
+RUN cp -a /tk5/dasd /tk5/dasd-seed
+COPY railway-entrypoint.sh /railway-entrypoint.sh
+RUN chmod +x /railway-entrypoint.sh
+CMD ["/railway-entrypoint.sh"]
 EXPOSE 3270 8038
