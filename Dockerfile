@@ -48,7 +48,13 @@ RUN echo "CONSOLE">/tk5/unattended/mode
 RUN rm -rf /tk5/hercules/darwin && \
     rm -rf /tk5/hercules/windows
 
-FROM alpine
+# Debian rather than Alpine: TK5 ships prebuilt Hercules binaries linked against
+# glibc, and on Alpine they load through gcompat, which does not provide the
+# __isoc23_* family the newer glibc build needs. The container starts and then
+# every Hercules library fails to relocate:
+#   Error relocating hercules/linux/64/lib/libherc.so: __isoc23_strtoul: symbol not found
+# A glibc base runs the shipped binaries as they were built, with no shim.
+FROM debian:bookworm-slim
 LABEL org.opencontainers.image.authors="jsl"
 LABEL version="1.00"
 LABEL description="OS/VS2 MVS 3.8j Service Level 8505, Tur(n)key Level 5 Version 1.00"
@@ -60,9 +66,14 @@ COPY --from=builder /tk5/ .
 # /tk5/dasd, which is the only one of the nine that holds state we cannot
 # rebuild: the DASD packs are the machine. The rest were declared for
 # convenience on a laptop and are rebuilt from the image on every start.
-RUN apk update && apk upgrade
-RUN apk add gcompat libstdc++ bash libbz2
-RUN cd /usr/lib && \
-    ln -s libbz2.so.1 libbz2.so.1.0
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        bash libbz2-1.0 libstdc++6 ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    lib=$(ls /usr/lib/*/libbz2.so.1.0 2>/dev/null | head -1); \
+    if [ -z "$lib" ]; then \
+        src=$(ls /usr/lib/*/libbz2.so.1* | head -1); \
+        ln -s "$src" "$(dirname "$src")/libbz2.so.1.0"; \
+    fi
 CMD ["/tk5/mvs"]
 EXPOSE 3270 8038
