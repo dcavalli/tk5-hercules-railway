@@ -53,8 +53,12 @@ RUN rm -rf /tk5/hercules/darwin && \
 # __isoc23_* family the newer glibc build needs. The container starts and then
 # every Hercules library fails to relocate:
 #   Error relocating hercules/linux/64/lib/libherc.so: __isoc23_strtoul: symbol not found
-# A glibc base runs the shipped binaries as they were built, with no shim.
-FROM debian:bookworm-slim
+# A glibc base runs the shipped binaries as they were built, with no shim -
+# but it has to be a new enough one. bookworm ships glibc 2.36 and the
+# binaries want 2.38:
+#   hercules: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38' not found
+# trixie ships 2.41.
+FROM debian:trixie-slim
 LABEL org.opencontainers.image.authors="jsl"
 LABEL version="1.00"
 LABEL description="OS/VS2 MVS 3.8j Service Level 8505, Tur(n)key Level 5 Version 1.00"
