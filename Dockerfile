@@ -54,7 +54,12 @@ LABEL version="1.00"
 LABEL description="OS/VS2 MVS 3.8j Service Level 8505, Tur(n)key Level 5 Version 1.00"
 WORKDIR /tk5/
 COPY --from=builder /tk5/ .
-VOLUME [ "/tk5/conf","/tk5/local_conf","/tk5/local_scripts","/tk5/prt","/tk5/dasd","/tk5/pch","/tk5/jcl","/tk5/log","/tk5/tape" ]
+# VOLUME removed for Railway: its builder refuses any Dockerfile carrying a
+# VOLUME instruction ("docker VOLUME at line N is not supported, use Railway
+# Volumes"). Persistence is attached by the platform instead, mounted on
+# /tk5/dasd, which is the only one of the nine that holds state we cannot
+# rebuild: the DASD packs are the machine. The rest were declared for
+# convenience on a laptop and are rebuilt from the image on every start.
 RUN apk update && apk upgrade
 RUN apk add gcompat libstdc++ bash libbz2
 RUN cd /usr/lib && \
